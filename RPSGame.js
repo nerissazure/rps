@@ -21,9 +21,9 @@ var RPSGame	=	{
 		}
 	},
 	keypress_map	:	{
-		"p"	:	"paper",
-		"r"	:	"rock",
-		"s"	:	"scissors"
+		"80"	:	"paper",
+		"82"	:	"rock",
+		"83"	:	"scissors"
 	},
 	option_map	:	{
 		"rock"	:	{
@@ -43,27 +43,33 @@ var RPSGame	=	{
 		}
 	},
 	outcome_map	:	{
-		"-1"	:	"loss",
+		"-1"	:	"lose",
 		"0"		:	"tie",
 		"1"		:	"win"
 	},
 	events	:	{
 		show_last_5			:	function(){
+			console.log("showing last 5 games");
 			return null;
 		},
 		show_first_5		:	function(){
+			console.log("showing first 5 games");
 			return null;
 		},
 		show_won_games		:	function(){
+			console.log("showing winning games");
 			return null;
 		},
 		show_total_games	:	function(){
+			console.log("showing total games");
 			return null;
 		},
 		select_play_option	:	function(play_type, self){
 			var game = self.game_factory();
 			var cpu_play = self.get_random_play();
-			game.result = self.get_outcome( play_type, cpu_play );
+			game.result = self.get_outcome( play_type, cpu_play, self );
+			game.human_play = play_type;
+			game.cpu_play	= cpu_play;
 			self.played_games.add(self, game);
 			self.display_results(self, game);
 		},
@@ -81,9 +87,11 @@ var RPSGame	=	{
 	init	:	function(){
 		for(var el_type in this.el){
 			for(var el_id in this.el[el_type]){
+				var id = this.el[el_type][el_id];
 				var dom_el = document.createElement(el_type);
 				var title = "";
-				var words = el_id.split("_");
+				var words = id.split("_");
+				
 				for(var word in words){
 					if(title !== ""){
 						title += " ";
@@ -91,7 +99,7 @@ var RPSGame	=	{
 					title += words[word];
 				}
 				
-				dom_el.setAttribute("id", el_id);
+				dom_el.setAttribute("id", id);
 				dom_el.setAttribute("title", title);
 				dom_el.innerHTML = title;
 				document.getElementById(this.config.container_el).appendChild(dom_el);
@@ -104,24 +112,32 @@ var RPSGame	=	{
 		for(var id in this.keypress_map){
 			this.attach_event(this.keypress_map[id]);
 		}
+		this.attach_keypress_event();
 		this.attach_event(this.get_el("accessibility_mode", false));
 	},
 	attach_event	:	function(id){
-		console.log("attaching event for: " + id);
 		var element = document.getElementById(id);
 		var that = this;
 		if(element.addEventListener){
-			element.addEventListener("keypress", function(e){ return that.dispatch_event(e, that); }, true);
 			element.addEventListener("click", function(e){ return that.dispatch_event(e, that); }, true);
 			element.addEventListener("dblclick", function(e){ return that.dispatch_event(e, that); }, true);
 		}else if(element.attachEvent){
-			element.attachEvent("onkeypress", function(e){ return that.dispatch_event(e, that); });
 			element.attachEvent("onclick", function(e){ return that.dispatch_event(e, that); });
 			element.attachEvent("ondblclick", function(e){ return that.dispatch_event(e, that); });
 		}else{
-			element.onkeypress = function(e){ return that.dispatch_event(e, that); };
 			element.onclick	= function(e){ return that.dispatch_event(e, that); };
 			element.dblclick = function(e){ return that.dispatch_event(e, that); };
+		}
+	},
+	attach_keypress_event	:	function(){
+		var that = this;
+		var element = document.getElementsByTagName("body")[0];
+		if(element.addEventListener){
+			element.addEventListener("keydown", function(e){ return that.dispatch_event(e, that); }, true);
+		}else if(element.attachEvent){
+			element.attachEvent("onkeypress", function(e){ return that.dispatch_event(e, that); });
+		}else{
+			element.onkeypress = function(e){ return that.dispatch_event(e, that); };
 		}
 	},
 	dispatch_event	:	function(event, self){
@@ -138,49 +154,56 @@ var RPSGame	=	{
 		}
 		
 		//check if event was triggered by playing the game
-		if(typeof(event.keycode) !== "undefined" && self.config.is_accessible === true){
-			self.events.select_play_option(self.keypress_map[event.keycode], self);
+		if(typeof(event.keyCode) !== "undefined" && self.config.is_accessible === true){
+			self.events.select_play_option(self.keypress_map[event.keyCode], self);
 			return null;
 		}else if( typeof(play_option) !== "undefined"){
 			self.events.select_play_option(event.target.getAttribute("id"), self);
 			return null;
 		}
 		
-		
-		
 		//otherwise we'll go through the other event possibilities
 		switch(event.target.getAttribute("id")){
 			case "accessibility_mode":
 				self.events.switch_mode(self, event);
+				return false;
 				
 			case "last_5":
 				self.events.show_last_5(self, event);
+				return false;
 			
 			case "first_5":
 				self.events.show_first_5(self, event);
+				return false;
 				
 			case "won_games":
 				self.events.show_won_games(self, event);
+				return false;
 				
 			case "total_games":
 				self.events.show_total_games(self, event);
+				return false;
 				
 			default:
-				return null;
+				return false;
 		}
 		
-		return null;
+		return false;
 	},
-	get_el	:	function(s, return_el){
+	get_el	:	function(selector, return_el, self){
 		if(typeof(return_el) === "undefined")
 			return_el = false;
-		for(var type in this.el){
-			for(var el in this.el[type]){
-				if(s === el){
-					if(return_el)
-						document.getElementById( this.el[type][el] );
-					else
-						return this.el[type][el];
+		if(typeof(self) === "undefined")
+			self = this;
+		for(var type in self.el){
+			for(var el in self.el[type]){
+				if(selector === el){
+					if(return_el){
+						return document.getElementById( self.el[type][el] );
+						}
+					else{
+						return self.el[type][el];
+					}
 				}
 			}
 		}
@@ -204,11 +227,26 @@ var RPSGame	=	{
 		list	:	[]
 	},
 	display_results	:	function(self, game){
-		console.log(game);
+	
+		//build the markup and text for displaying the game's result
+		var result_text = document.createElement("p");
+		var outcome_prefix = document.createElement("span")
+		outcome_prefix.innerHTML = "You ";
+		var outcome = document.createElement("span");
+		outcome.innerHTML = self.outcome_map[game.result];
+		outcome.classList.add("outcome_" + self.outcome_map[game.result]);
+		var result_el = self.get_el("result", true, self);
+		result_el.innerHTML = "";
+		result_el.appendChild(outcome_prefix);
+		result_el.appendChild(outcome);
+		
+		//show the cpu's play
+		self.get_el("cpu", true, self).innerHTML = "CPU Played: " + game.cpu_play;
+		return true;
 	},
 	get_random_play	:	function(){
 		var increment = 0;
-		var index = Math.round(Math.random() * 999) % 3;
+		var index = Math.round(Math.random() * 1000) % 3;
 		for(var play_type in this.option_map){
 			if(typeof(this.option_map[play_type]) === "object"){
 				if(index == increment){
@@ -219,13 +257,19 @@ var RPSGame	=	{
 		}
 		throw("Unable to get a random play for CPU.");
 	},
-	get_outcome	:	function(human_play, cpu_play){
-		return this.option_map[human_play][cpu_play];
+	get_outcome	:	function(human_play, cpu_play, self){
+		try{
+			return self.option_map[human_play][cpu_play];
+		}catch(e){
+			//don't need to do anything, just caught a bad keypress
+		}
 	},
 	game_factory	:	function(){
 		return {
-			result	:	null,
-			time	:	Date()
+			result		:	null,
+			time		:	Date(),
+			human_play	:	null,
+			cpu_play	:	null
 		};
 	}
 };
