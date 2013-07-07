@@ -1,0 +1,17 @@
+#accessibility_mode:after{
+	content	:	": STANDARD";
+	color	:	blue;
+}
+#accessibility_mode:after .enabled{
+	content	: ": ENABLED";
+	color	:	green;
+}
+button#paper{
+	content	:	"Paper";
+}
+button#rock{
+	content	:	"Rock";
+}
+button#scissors{
+	content	:	"Scissors";
+}
