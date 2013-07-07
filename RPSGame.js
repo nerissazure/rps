@@ -48,9 +48,44 @@ var RPSGame	=	{
 		"1"		:	"win"
 	},
 	events	:	{
-		show_last_5			:	function(){
-			console.log("showing last 5 games");
-			return null;
+		show_last_5			:	function(self){
+			var info_container = self.get_el("info", true, self);
+			var game_collection = [];
+			var played_games = self.played_games.list;
+			var ending_offset = 5;
+			var game_container = document.createElement("ol");
+			if(played_games.length < 5){
+				if(played_games.length == 0){
+					info_container.innerHTML = "You have not played any games this session.";
+					return false;
+				}
+				ending_offset = played_games.length;
+			}
+			
+			for(var i = 0; i < ending_offset; i++){
+				var game_el = document.createElement("li");
+				var time_el = document.createElement("p");
+				var human_play_el = document.createElement("p");
+				var cpu_play_el = document.createElement("p");
+				var result_el = document.createElement("p");
+				
+				time_el.innerHTML = played_games[i].time;
+				human_play_el.innerHTML = played_games[i].human_play;
+				cpu_play_el.innerHTML = played_games[i].cpu_play;
+				result_el.innerHTML = self.outcome_map[played_games[i].result];
+				
+				game_el.appendChild(time_el);
+				game_el.appendChild(human_play_el);
+				game_el.appendChild(cpu_play_el);
+				game_el.appendChild(result_el);
+				game_container.appendChild(game_el);
+			}
+			game_container.classList.add("last_5");
+			
+			info_container.innerHTML = "";
+			info_container.appendChild(game_container);
+			
+			return false;
 		},
 		show_first_5		:	function(){
 			console.log("showing first 5 games");
@@ -74,6 +109,7 @@ var RPSGame	=	{
 			self.display_results(self, game);
 		},
 		switch_mode	:	function(self, e){
+			console.log("switching");
 			var elem = e.target;
 			if( elem.classList.contains("enabled") ){
 				elem.classList.remove("enabled");
@@ -113,7 +149,7 @@ var RPSGame	=	{
 			this.attach_event(this.el.button[id]);
 		}
 		this.attach_keypress_event();
-		this.attach_event(this.get_el("accessibility_mode", false));
+		//this.attach_event(this.get_el("accessibility_mode", false));
 	},
 	attach_event	:	function(id){
 		var element = document.getElementById(id);
@@ -146,22 +182,6 @@ var RPSGame	=	{
 			return false;
 		}
 		
-		var play_option = "";
-		try{
-			play_option = self.option_map[event.target.getAttribute("id")];
-		}catch(e){ 
-			//do nothing
-		}
-		
-		//check if event was triggered by playing the game
-		if(typeof(event.keyCode) !== "undefined" && self.config.is_accessible === true){
-			self.events.select_play_option(self.keypress_map[event.keyCode], self);
-			return null;
-		}else if( typeof(play_option) !== "undefined"){
-			self.events.select_play_option(event.target.getAttribute("id"), self);
-			return null;
-		}
-		
 		//otherwise we'll go through the other event possibilities
 		switch(event.target.getAttribute("id")){
 			case "accessibility_mode":
@@ -183,9 +203,22 @@ var RPSGame	=	{
 			case "total_games":
 				self.events.show_total_games(self, event);
 				return false;
-				
-			default:
-				return false;
+		}
+		
+		var play_option = "";
+		try{
+			play_option = self.option_map[event.target.getAttribute("id")];
+		}catch(e){ 
+			//do nothing
+		}
+		
+		//check if event was triggered by playing the game
+		if( typeof(event.keyCode) !== "undefined" && event.keyCode !== 0 && self.config.is_accessible === true){
+			self.events.select_play_option(self.keypress_map[event.keyCode], self);
+			return null;
+		}else if( typeof(play_option) !== "undefined"){
+			self.events.select_play_option(event.target.getAttribute("id"), self);
+			return null;
 		}
 		
 		return false;
