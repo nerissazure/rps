@@ -2,7 +2,7 @@
 	content	:	": STANDARD";
 	color	:	blue;
 }
-#accessibility_mode:after .enabled{
+#accessibility_mode.enabled:after{
 	content	: ": ENABLED";
 	color	:	green;
 }

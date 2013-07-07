@@ -57,7 +57,7 @@ var RPSGame	=	{
 		show_won_games		:	function(){
 			return null;
 		},
-		show_total_results	:	function(){
+		show_total_games	:	function(){
 			return null;
 		},
 		select_play_option	:	function(play_type, self){
@@ -66,6 +66,16 @@ var RPSGame	=	{
 			game.result = self.get_outcome( play_type, cpu_play );
 			self.played_games.add(self, game);
 			self.display_results(self, game);
+		},
+		switch_mode	:	function(self, e){
+			var elem = e.target;
+			if( elem.classList.contains("enabled") ){
+				elem.classList.remove("enabled");
+				self.config.is_accessible = false;
+			}else{
+				elem.classList.add("enabled");
+				self.config.is_accessible = true;
+			}
 		}
 	},
 	init	:	function(){
@@ -94,65 +104,66 @@ var RPSGame	=	{
 		for(var id in this.keypress_map){
 			this.attach_event(this.keypress_map[id]);
 		}
-		this.that = this;
 		this.attach_event(this.get_el("accessibility_mode", false));
 	},
 	attach_event	:	function(id){
 		console.log("attaching event for: " + id);
 		var element = document.getElementById(id);
-		that = this;
+		var that = this;
 		if(element.addEventListener){
-			if(this.config.is_accessible){
-				element.addEventListener("keypress", function(e){ return that.dispatch_event(e, that); }, true);
-				element.addEventListener("click", function(e){ return that.dispatch_event(e, that); }, true);
-			}else{
-				element.addEventListener("dblclick", function(e){ return that.dispatch_event(e, that); }, true);
-			}
+			element.addEventListener("keypress", function(e){ return that.dispatch_event(e, that); }, true);
+			element.addEventListener("click", function(e){ return that.dispatch_event(e, that); }, true);
+			element.addEventListener("dblclick", function(e){ return that.dispatch_event(e, that); }, true);
 		}else if(element.attachEvent){
-			if(this.config.is_accessible){
-				element.attachEvent("onkeypress", function(e){ return that.dispatch_event(e, that); });
-				element.attachEvent("onclick", function(e){ return that.dispatch_event(e, that); });
-			}else{
-				element.attachEvent("ondblclick", function(e){ return that.dispatch_event(e, that); });
-			}
+			element.attachEvent("onkeypress", function(e){ return that.dispatch_event(e, that); });
+			element.attachEvent("onclick", function(e){ return that.dispatch_event(e, that); });
+			element.attachEvent("ondblclick", function(e){ return that.dispatch_event(e, that); });
 		}else{
-			if(this.config.is_accessible){
-				element.onkeypress = function(e){ return that.dispatch_event(e, that); };
-				element.onclick	= function(e){ return that.dispatch_event(e, that); };
-			}else{
-				element.dblclick = function(e){ return that.dispatch_event(e, that); };
-			}
+			element.onkeypress = function(e){ return that.dispatch_event(e, that); };
+			element.onclick	= function(e){ return that.dispatch_event(e, that); };
+			element.dblclick = function(e){ return that.dispatch_event(e, that); };
 		}
 	},
 	dispatch_event	:	function(event, self){
-		var y = event.target.getAttribute("id");
-		var x = self.option_map[y];
+		//prevent single click events when accessible mode is off.
+		if( event.type === "click" && self.config.is_accessible === false ){
+			return false;
+		}
+		
+		var play_option = "";
+		try{
+			play_option = self.option_map[event.target.getAttribute("id")];
+		}catch(e){ 
+			//do nothing
+		}
 		
 		//check if event was triggered by playing the game
-		if(typeof(event.keycode) !== "undefined"){
+		if(typeof(event.keycode) !== "undefined" && self.config.is_accessible === true){
 			self.events.select_play_option(self.keypress_map[event.keycode], self);
 			return null;
-		}else if( typeof(x) !== "undefined"){
+		}else if( typeof(play_option) !== "undefined"){
 			self.events.select_play_option(event.target.getAttribute("id"), self);
 			return null;
 		}
 		
+		
+		
 		//otherwise we'll go through the other event possibilities
 		switch(event.target.getAttribute("id")){
 			case "accessibility_mode":
-				this.events.switch_mode();
+				self.events.switch_mode(self, event);
 				
 			case "last_5":
-				this.events.show_last_5();
+				self.events.show_last_5(self, event);
 			
 			case "first_5":
-				this.events.show_first_5();
+				self.events.show_first_5(self, event);
 				
 			case "won_games":
-				this.events.show_won_games();
+				self.events.show_won_games(self, event);
 				
 			case "total_games":
-				this.events.show_total_games();
+				self.events.show_total_games(self, event);
 				
 			default:
 				return null;
