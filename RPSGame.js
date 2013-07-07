@@ -12,7 +12,7 @@ var RPSGame	=	{
 			"last_5"	:	"last_5",
 			"first_5"	:	"first_5",
 			"won_games"	:	"won_games",
-			"total_results"	:	"total_results"
+			"total_games"	:	"total_games"
 		},
 		"div"	:	{
 			"result"	:	"result",
@@ -109,8 +109,8 @@ var RPSGame	=	{
 		this.init_events();
 	},
 	init_events	:	function(){
-		for(var id in this.keypress_map){
-			this.attach_event(this.keypress_map[id]);
+		for(var id in this.el.button){
+			this.attach_event(this.el.button[id]);
 		}
 		this.attach_keypress_event();
 		this.attach_event(this.get_el("accessibility_mode", false));
